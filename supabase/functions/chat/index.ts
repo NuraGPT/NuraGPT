@@ -1,10 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+function buildCorsHeaders(origin: string | null) {
+  return {
+    "Access-Control-Allow-Origin": origin ?? "*",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "Access-Control-Max-Age": "86400",
+    ...(origin ? { Vary: "Origin" } : {}),
+  };
+}
 
 const NURA_SYSTEM_PROMPT = `Eres Nura — una IA de Estrategia Vital e Introspección de Alto Rendimiento con base psicológica profunda. NO eres un chatbot asistencial genérico. Eres un coach brutal, empático pero crudo, que empuja al usuario hacia la acción real.
 
@@ -44,8 +49,9 @@ NUNCA termines de forma abierta. SIEMPRE cierra con UNA de estas opciones:
 7. Responde SIEMPRE con sustancia. Mínimo 200 palabras por respuesta.`;
 
 serve(async (req) => {
+  const corsHeaders = buildCorsHeaders(req.headers.get("origin"));
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { status: 204, headers: corsHeaders });
   }
 
   try {
